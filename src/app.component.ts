@@ -6,13 +6,15 @@ import {
 } from '@angular/core';
 import { PostComponent } from './posts/post.component';
 import { PostListComponent } from './posts/post-list.component';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-root',
   standalone: true,
+  imports: [AngularQueryDevtools, RouterOutlet, PostComponent, PostListComponent],
   template: `
-    <p>
+    <!-- <p>
       As you visit the posts below, you will notice them in a loading state the
       first time you load them. However, after you return to this list and click
       on any posts you have already visited again, you will see them load
@@ -21,16 +23,10 @@ import { PostListComponent } from './posts/post-list.component';
         (You may need to throttle your network speed to simulate longer loading
         sequences)
       </strong>
-    </p>
+    </p> -->
+    <router-outlet></router-outlet>
     <angular-query-devtools initialIsOpen />
-    @if (postId() > -1) {
-      <post [postId]="postId()" (setPostId)="postId.set($event)"></post>
-    } @else {
-      <posts (setPostId)="postId.set($event)" />
-    }
   `,
-  imports: [AngularQueryDevtools, PostComponent, PostListComponent],
 })
 export class AppComponent {
-  postId = signal(-1);
 }

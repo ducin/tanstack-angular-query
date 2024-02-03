@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Output, inject } from '@angular/core';
 import { injectQuery, injectQueryClient } from '@tanstack/angular-query-experimental';
-import { HttpClient } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
-import { Post } from './model/Post';
+import { PostsHTTPService } from '../app/posts/api/posts-http.service';
+import { RouterLink } from '@angular/router';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'posts',
   standalone: true,
+  imports: [RouterLink],
   template: `<div>
     <h1>Posts</h1>
     @switch (postsQuery.status()) {
@@ -21,10 +22,8 @@ import { Post } from './model/Post';
         <div class="todo-container">
           @for (post of postsQuery.data(); track post.id) {
             <p>
-              <!--          We can access the query data here to show bold links for-->
-              <!--          ones that are cached-->
               <a
-                href="#"
+                [routerLink]="['/posts', post.id]"
                 (click)="setPostId.emit(post.id)"
                 [style]="
                   queryClient.getQueryData(['post', post.id])
@@ -51,13 +50,11 @@ import { Post } from './model/Post';
 export class PostListComponent {
   @Output() setPostId = new EventEmitter<number>();
 
-  posts$ = inject(HttpClient).get<Array<Post>>(
-    'https://jsonplaceholder.typicode.com/posts'
-  );
+  #postsHTTP = inject(PostsHTTPService)
 
   postsQuery = injectQuery(() => ({
     queryKey: ['posts'],
-    queryFn: () => lastValueFrom(this.posts$),
+    queryFn: () => lastValueFrom(this.#postsHTTP.posts$),
   }));
 
   queryClient = injectQueryClient();

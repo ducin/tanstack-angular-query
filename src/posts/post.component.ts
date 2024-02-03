@@ -1,8 +1,11 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Output, computed, inject, input, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop'
+import { ActivatedRoute } from '@angular/router';
 import { injectQuery, injectQueryClient } from '@tanstack/angular-query-experimental';
-import { HttpClient } from '@angular/common/http';
-import { fromEvent, lastValueFrom, takeUntil } from 'rxjs';
+import { fromEvent, lastValueFrom, map, switchMap, takeUntil } from 'rxjs';
+
 import { Post } from './model/Post';
+import { PostsHTTPService } from '../app/posts/api/posts-http.service';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,24 +35,22 @@ import { Post } from './model/Post';
 })
 export class PostComponent {
   @Output() setPostId = new EventEmitter<number>();
-  postId = input.required<number>();
 
-  httpClient = inject(HttpClient);
-  getPost$ = (postId: number) => {
-    return this.httpClient.get<Post>(
-      `https://jsonplaceholder.typicode.com/posts/${postId}`
-    );
-  };
+  #postsHTTP = inject(PostsHTTPService);
+  #route = inject(ActivatedRoute);
+  #routeParams = toSignal(this.#route.paramMap, { requireSync: true });
+  #postId = computed(() => +this.#routeParams().get('postId')!);
 
+  // TODO: REDESIGN - dumping observable (routing/toSignal) into a signal and then sending HTTP via rxjs and accessing the ID through a signal
   postQuery = injectQuery(() => ({
-    enabled: this.postId() > 0,
-    queryKey: ['post', this.postId()],
+    enabled: this.#postId() > 0,
+    queryKey: ['post', this.#postId()],
     queryFn: async (context): Promise<Post> => {
       // Cancels the request when component is destroyed before the request finishes
       const abort$ = fromEvent(context.signal, 'abort');
-      return lastValueFrom(
-        this.getPost$(this.postId()).pipe(takeUntil(abort$))
-      );
+      return lastValueFrom(this.#postsHTTP.getPost$(this.#postId()).pipe(
+        takeUntil(abort$)
+      ));
     },
   }));
 
