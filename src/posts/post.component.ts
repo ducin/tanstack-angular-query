@@ -1,17 +1,42 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Output, computed, effect, inject, input, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop'
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { injectQuery, injectQueryClient } from '@tanstack/angular-query-experimental';
-import { fromEvent, lastValueFrom, map, switchMap, takeUntil } from 'rxjs';
+import { lastValueFrom } from 'rxjs';
 
-import { Post } from './model/Post';
-import { PostsHTTPService } from '../app/posts/api/posts-http.service';
+import { PostsHTTPService } from './api/posts-http.service';
+import { CommentsHTTPService } from './api/comments-http.service';
+import type { Post } from './model/Post';
+import type { Comment } from './model/Comment';
+import { injectUsersVM } from '../users/api/userQueries';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'post',
   standalone: true,
   imports: [RouterLink],
+  styles: `
+    .blog-post {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .blog-post h1 {
+        margin-top: 0;
+        margin-bottom: 10px;
+    }
+    .blog-post p {
+        margin: 0;
+        color: #495057;
+    }
+    .blog-post .author {
+        font-style: italic;
+        color: #868e96;
+        margin: 4px 0;
+    }
+  `,
   template: `
     <div>
       <div>
@@ -23,8 +48,9 @@ import { PostsHTTPService } from '../app/posts/api/posts-http.service';
         Error: {{ postQuery.error()?.message }}
       }
       @if (postQuery.data(); as post) {
-        <h1>{{ post.title }}</h1>
-        <div>
+        <div class="blog-post">
+          <h1>{{ post.title }}</h1>
+          <p class="author">Written by: {{ usersVM.getAuthorNameByPostId(post) }}</p>
           <p>{{ post.body }}</p>
         </div>
         @if (postQuery.isFetching()) {
@@ -38,18 +64,26 @@ export class PostComponent {
   postId = input<number>();
 
   #postsHTTP = inject(PostsHTTPService);
-  e = effect(() => console.log('postId', this.postId()))
-  // #route = inject(ActivatedRoute);
-  // #routeParams = toSignal(this.#route.paramMap, { requireSync: true });
-  // #postId = computed(() => +this.#routeParams().get('postId')!);
+  #commentsHTTP = inject(CommentsHTTPService);
 
   postQuery = injectQuery(() => ({
     enabled: Number(this.postId()) > 0,
+    staleTime: 1000 * 60 * 5,
     queryKey: ['posts', this.postId()],
     queryFn: async (): Promise<Post> => {
       return lastValueFrom(this.#postsHTTP.getPost(this.postId()!));
     },
   }));
 
+  commentsQuery = injectQuery(() => ({
+    enabled: Number(this.postId()) > 0,
+    queryKey: ['comments', this.postId()],
+    queryFn: async (): Promise<Comment[]> => {
+      return lastValueFrom(this.#commentsHTTP.getAllPostComments(this.postId()!));
+    },
+  }));
+
   queryClient = injectQueryClient();
+
+  usersVM = injectUsersVM()
 }

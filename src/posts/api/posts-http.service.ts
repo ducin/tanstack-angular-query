@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 
-import { Post } from '../../../posts/model/Post';
-import { injectAPIURL } from '../../../api-token';
+import { Post } from '../model/Post';
+import { injectAPIURL } from '../../api-token';
 
 @Injectable({
   providedIn: 'root'
