@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Output, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Output, computed, effect, inject, input, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop'
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { injectQuery, injectQueryClient } from '@tanstack/angular-query-experimental';
 import { fromEvent, lastValueFrom, map, switchMap, takeUntil } from 'rxjs';
 
@@ -11,10 +11,11 @@ import { PostsHTTPService } from '../app/posts/api/posts-http.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'post',
   standalone: true,
+  imports: [RouterLink],
   template: `
     <div>
       <div>
-        <a (click)="setPostId.emit(-1)" href="#"> Back </a>
+        <a [routerLink]="['/posts']"> Back </a>
       </div>
       @if (postQuery.status() === 'pending') {
         Loading...
@@ -34,23 +35,20 @@ import { PostsHTTPService } from '../app/posts/api/posts-http.service';
   `,
 })
 export class PostComponent {
-  @Output() setPostId = new EventEmitter<number>();
+  postId = input<number>(0);
 
   #postsHTTP = inject(PostsHTTPService);
-  #route = inject(ActivatedRoute);
-  #routeParams = toSignal(this.#route.paramMap, { requireSync: true });
-  #postId = computed(() => +this.#routeParams().get('postId')!);
+  e = effect(() => console.log('postId', this.postId()))
+  // #route = inject(ActivatedRoute);
+  // #routeParams = toSignal(this.#route.paramMap, { requireSync: true });
+  // #postId = computed(() => +this.#routeParams().get('postId')!);
 
   // TODO: REDESIGN - dumping observable (routing/toSignal) into a signal and then sending HTTP via rxjs and accessing the ID through a signal
   postQuery = injectQuery(() => ({
-    enabled: this.#postId() > 0,
-    queryKey: ['post', this.#postId()],
-    queryFn: async (context): Promise<Post> => {
-      // Cancels the request when component is destroyed before the request finishes
-      const abort$ = fromEvent(context.signal, 'abort');
-      return lastValueFrom(this.#postsHTTP.getPost$(this.#postId()).pipe(
-        takeUntil(abort$)
-      ));
+    enabled: this.postId()! > 0,
+    queryKey: ['posts', this.postId()],
+    queryFn: async (): Promise<Post> => {
+      return lastValueFrom(this.#postsHTTP.getPost$(this.postId()!));
     },
   }));
 

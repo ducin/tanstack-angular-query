@@ -24,7 +24,6 @@ import { RouterLink } from '@angular/router';
             <p>
               <a
                 [routerLink]="['/posts', post.id]"
-                (click)="setPostId.emit(post.id)"
                 [style]="
                   queryClient.getQueryData(['post', post.id])
                     ? {
@@ -48,8 +47,6 @@ import { RouterLink } from '@angular/router';
   </div> `,
 })
 export class PostListComponent {
-  @Output() setPostId = new EventEmitter<number>();
-
   #postsHTTP = inject(PostsHTTPService)
 
   postsQuery = injectQuery(() => ({
