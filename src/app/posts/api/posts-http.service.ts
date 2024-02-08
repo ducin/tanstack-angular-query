@@ -12,13 +12,15 @@ export class PostsHTTPService {
   #HTTP = inject(HttpClient)
   #URL = injectAPIURL();
 
-  posts$ = this.#HTTP.get<Post[]>(
-    `${this.#URL}/posts`
-  );
+  getAllPosts = () => {
+    return this.#HTTP.get<Post[]>(`${this.#URL}/posts`);
+  };
 
-  getPost$ = (postId: number) => {
-    return this.#HTTP.get<Post>(
-      `https://jsonplaceholder.typicode.com/posts/${postId}`
-    );
+  getPost = (postId: number) => {
+    return this.#HTTP.get<Post>(`${this.#URL}/posts/${postId}`);
+  };
+
+  deletePost = (postId: number) => {
+    return this.#HTTP.delete<void>(`${this.#URL}/posts/${postId}`);
   };
 }

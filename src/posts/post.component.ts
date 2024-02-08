@@ -35,7 +35,7 @@ import { PostsHTTPService } from '../app/posts/api/posts-http.service';
   `,
 })
 export class PostComponent {
-  postId = input<number>(0);
+  postId = input<number>();
 
   #postsHTTP = inject(PostsHTTPService);
   e = effect(() => console.log('postId', this.postId()))
@@ -43,12 +43,11 @@ export class PostComponent {
   // #routeParams = toSignal(this.#route.paramMap, { requireSync: true });
   // #postId = computed(() => +this.#routeParams().get('postId')!);
 
-  // TODO: REDESIGN - dumping observable (routing/toSignal) into a signal and then sending HTTP via rxjs and accessing the ID through a signal
   postQuery = injectQuery(() => ({
-    enabled: this.postId()! > 0,
+    enabled: Number(this.postId()) > 0,
     queryKey: ['posts', this.postId()],
     queryFn: async (): Promise<Post> => {
-      return lastValueFrom(this.#postsHTTP.getPost$(this.postId()!));
+      return lastValueFrom(this.#postsHTTP.getPost(this.postId()!));
     },
   }));
 
